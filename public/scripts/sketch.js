@@ -1,196 +1,52 @@
-let capture;
-let submitButton;
-let locationData;
-let state = 0;
-let video;
-let poseNet;
-let poses = [];
-let skeletons = [];
+// Initialize the Image Classifier method with MobileNet. A callback needs to be passed.
+// Create a YOLO method
+const yolo = ml5.YOLO(modelReady);
+let img;
+let objects = [];
+let status;
 
-let keypoints = [];
-let prevkeypoints = [];
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  img = createImg('images/livingroom.JPG', imageReady);
 
-let symmetry = 6;
-
-let angle = 360 / symmetry;
-let easing = 0.05;
-
-let x = 1
-let y = 1
-let sliderSymmetry;
-let strokeSize;
-let knob
-let succededDiv 
-
-function setup(){
-
-    
-    
-    cnv = createCanvas(500, 500).parent("#mySketch");
-    angleMode(DEGREES);
-    video = createCapture(VIDEO);
-    poseNet = ml5.poseNet(video, modelReady);
-    poseNet.on('pose', gotPoses);
-    video.size(width, height);
-    video.hide()
-    
-    pixelDensity(1);
-    
-    submitButton = select("#submitButton");
-    submitButton.mousePressed(handleSubmit);
-    knob = select('#knob')
-    
-
-    //symmetry
-    sliderSymmetry = createSlider(4, 12, 6, 1)
-    sliderSymmetry.style('width', '80px');
-    sliderSymmetry.parent("#knobs")
-    sliderSymmetry.class('input');
-    //sliderSymmetry.id('symmetry')
-
-    //size
-    strokeSize = createSlider(2, 40, 5, 1)
-    strokeSize.style('width', '80px');
-    strokeSize.parent("#knobs")
-    //strokeSize.id('size')
-
-    //R
-    strokeR = createSlider(0, 250, 255, 1)
-    strokeR.style('width', '80px');
-    strokeR.parent("#knobs")
-    //strokeR.id('red')
-
-    //G
-    strokeG = createSlider(0, 250, 0, 1)
-    strokeG.style('width', '80px');
-    strokeG.parent("#knobs")
-    //strokeG.id('green')
-
-    //B
-    strokeB = createSlider(0, 250, 255, 1)
-    strokeB.style('width', '80px');
-    strokeB.parent("#knobs")
-    //strokeB.class('blue')
-
-    background(255)
-
-    //knobs descriptions
-    //red
-    //descriptionR.parent('#red')
-    //descriptionRed = createP('cacacacacacaca');
-
-    //green
-    //descriptionGreen = createP('green');
-    //descriptionRed.parent('#green')
-
-    //descriptionBlue = createP('blue');
-    //descriptionRed.parent('blue')
-
-    //descriptionSize = createP('size');
-
-    //descriptionSymmetry = createP('symmetry');
 }
 
+// Change the status when the model loads.
 function modelReady() {
-    console.log(".");
+  console.log("model Ready!")
+  status = true;
 }
 
-function draw(){
-    background(220,0.4);
-    drawKeypoints();
-    symmetry = sliderSymmetry.value()
+// When the image has been loaded,
+// get a prediction for that image
+function imageReady() {
+  console.log('Detecting') 
+  yolo.detect(img, gotResult);
 }
 
-function drawKeypoints() {
-    if (poses.length == 0) {
-        return;
+// A function to run when we get any errors and the results
+function gotResult(err, results) {
+  if (err) {
+    console.log(err);
+  }
+  console.log(results)
+  objects = results;
+}
+
+
+function draw() {
+  // unless the model is loaded, do not draw anything to canvas
+  if (status != undefined) {
+    image(img, 0, 0)
+
+    for (let i = 0; i < objects.length; i++) {
+      noStroke();
+      fill(0, 255, 0);
+      text(objects[i].label + " " + nfc(objects[i].confidence * 100.0, 2) + "%", objects[i].x * width + 5, objects[i].y * height + 15);
+      noFill();
+      strokeWeight(4);
+      stroke(0, 255, 0);
+      rect(objects[i].x * width, objects[i].y * height, objects[i].w * width, objects[i].h * height);
     }
-
-    prevkeypoints = keypoints;
-    keypoints = poses[0].pose.keypoints;
-    rightw = keypoints[10].position;
-    let ran1 = random(255)
-    fill(ran1)
-    translate(width / 2, height / 2);
-
-    // EASING 
-
-    let targetX = rightw.x;
-    let dx = targetX - x;
-    x += dx * easing;
-
-    let targetY = rightw.y;
-    let dy = targetY - y;
-    y += dy * easing;
-
-    // Kaleidoscope 
-
-    if (rightw.x > 0 && rightw.x < width && rightw.y > 0 && rightw.y < height) {
-        let mx = x - width / 2;
-        let my = y - height / 2;
-        let pmx = x - width / 2;
-        let pmy = y - height / 2;
-
-
-        for (let i = 0; i < symmetry; i++) {
-            rotate(angle);
-            stroke(strokeR.value(), strokeG.value(), strokeB.value())
-            strokeWeight(random(strokeSize.value()));
-
-            line(mx, my, pmx, pmy);
-            push();
-            scale(1, -1);
-            line(mx, my, pmx, pmy);
-            pop();
-        }
-    }
+  }
 }
-
-function gotPoses(results) {
-    poses = results;
-}
-
-function handleSubmit(e){
-    let output = {
-        location: {},
-        image: ''
-    }
-    const last_img = get()
-    output.image = last_img.canvas.toDataURL()
-    const options = {
-        method: 'POST',
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(output)
-    }
-    fetch('/api', options)
-    .then(() => { appendSucces()})
-    .catch(err => console.log(err));
-
-}
-
-function appendSucces(){
-    setTimeout(() => {
-        removeD() 
-    }, 2000);
-    
-    succededDiv = createDiv('Created!')
-    succededDiv.class('succededDiv')
-    succededDiv.style('width','50px')
-    succededDiv.parent("#knobs")
-    let notLoggedIn = select('#notLogged')
-    notLoggedIn.style('display','inline')
-
-   // notLoggedIn.style('right','300px')
-}
-
-
-function removeD() {
-   succededDiv.remove()
-}
-
-
-
-
-
