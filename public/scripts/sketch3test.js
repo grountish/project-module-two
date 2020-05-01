@@ -1,40 +1,39 @@
-const yolo = ml5.YOLO(modelReady); 
+
 let img; let objects = []; let status; let imageFile;
 let inputImage = document.getElementById('img');
-//let imageTry = document.getElementById('imageTest')
 let imgShow = document.getElementsByTagName('img')
 imgShow.className += 'imagShow'
 
-inputImage.addEventListener('change', (e) => {
-    let urlurl = URL.createObjectURL(event.target.files[0]);
-    // imageTry.src = urlurl;
-    // imageTry.width = '200'
-    // imageTry.height = '200'
-    console.log(urlurl)
-
-    setImg(urlurl)
-})
-
-function setImg(urlurl) {
-  createCanvas(640, 420);
-  img = createImg(urlurl, imageReady);
-  //img.hide();
-  img.size(640, 420) 
-  img.class('imagShow')
-  //let inputFile = createFileInput(setImg);
+function preload() {
+  const classifier = ml5.imageClassifier('https://teachablemachine.withgoogle.com/models/6qPt5DIx-/', modelReady);
 }
+
 
 // Change the status when the model loads.
 function modelReady() {
   console.log("model Ready!")
   status = true;
+  setImage()
 }
 
-// When the image has been loaded, // get a prediction for that image
-function imageReady() {
-  console.log('Detecting') 
-  yolo.detect(img, gotResult);
+function setImage() {
+  inputImage.addEventListener('change', (e) => {
+    let urlurl = URL.createObjectURL(event.target.files[0]);
+    setup(urlurl)
+})}
+
+
+function setup(urlurl) {
+  createCanvas(640, 420);
+  img = createImg(urlurl);
+  img.size(640, 420) 
+  img.class('imagShow')
+  setTimeout(() => {
+    classifier.classify(img, gotResult);
+  }, 5000);
 }
+
+
 // A function to run when we get any errors and the results
 function gotResult(err, results) {
   if (err) {

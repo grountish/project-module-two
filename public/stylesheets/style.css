@@ -684,3 +684,9 @@ html.is-animating .transition-fade {
   color: white;
   border-bottom: 2px solid white;
 }
+
+.imagShow{
+  position: absolute;
+  left: 0;
+  z-index: -1;
+}
