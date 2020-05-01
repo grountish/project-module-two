@@ -1,63 +1,72 @@
-const yolo = ml5.YOLO(modelReady); 
-let img; let objects = []; let status; let imageFile;
-let inputImage = document.getElementById('img');
-//let imageTry = document.getElementById('imageTest')
-let imgShow = document.getElementsByTagName('img')
-imgShow.className += 'imagShow'
+p5.disableFriendlyErrors = true;
 
-inputImage.addEventListener('change', (e) => {
-    let urlurl = URL.createObjectURL(event.target.files[0]);
-    // imageTry.src = urlurl;
-    // imageTry.width = '200'
-    // imageTry.height = '200'
-    console.log(urlurl)
+let classifier;
+let img;
+let currentIndex = 0;
+let allImages = [];
+let predictions = [];
 
-    setImg(urlurl)
+let inputImage = document.getElementById('img')
+let urlImg
+
+inputImage.addEventListener('change', (e)=>{
+  urlImg = URL.createObjectURL(event.target.files[0])
+  imageReady(urlImg)
 })
 
-function setImg(urlurl) {
-  createCanvas(640, 420);
-  img = createImg(urlurl, imageReady);
-  //img.hide();
-  img.size(640, 420) 
-  img.class('imagShow')
-  //let inputFile = createFileInput(setImg);
+function preload() {
+  classifier = ml5.imageClassifier('https://teachablemachine.withgoogle.com/models/6qPt5DIx-/model.json');
+  data = loadJSON('assets/data.json');
 }
 
-// Change the status when the model loads.
-function modelReady() {
-  console.log("model Ready!")
-  status = true;
+function setup() {
+ 
+  // leave setup here, do not delete!
+ 
 }
 
-// When the image has been loaded, // get a prediction for that image
-function imageReady() {
-  console.log('Detecting') 
-  yolo.detect(img, gotResult);
+function imageReady(img1) {
+  img1 = createImg(urlImg,'alt' ,()=>{
+    classifier.classify(img1, gotResult)
+  })
+  img1.hide()
 }
-// A function to run when we get any errors and the results
+
+
+let workHome
 function gotResult(err, results) {
   if (err) {
-    console.log(err);
+    console.error(err);
   }
   console.log(results)
-  objects = results; // DATA FOR SQUARES
-}
+  information = {
+    name: allImages[currentIndex],
+    result: results
+  };
 
+  predictions.push(information);
 
-function draw() {
-  // unless the model is loaded, do not draw anything to canvas
-  if (status != undefined) {
-    //image(img, 0, 0);
-    for (let i = 0; i < objects.length; i++) {
-      noStroke();
-      fill(0, 255, 0);
-      textSize(20)
-      text(objects[i].className + " " + nfc(objects[i].classProb * 100.0, 2) + "%", objects[i].x * width + 5, objects[i].y * height + 15);
-      noFill();
-      strokeWeight(4);
-      stroke(100, 200, 0);
-      rect(objects[i].x * width, objects[i].y * height, objects[i].w * width, objects[i].h * height);
-    }
+  let plantArr = ['asd','asdf','asdd','dsfsdf']
+  switch (results[0].label) {
+    case 'PLANT':
+      workHome = ' someth with plants'
+      break;
+      case 'CAT':
+      workHome = ' let your cat join your gym session!'
+      break;
+      case 'SOFA':
+      workHome = ' someth with sofa'
+      break;
+      case 'COFFEE TABLE':
+      workHome = ' someth with coffee '
+      break;
+      case 'CHAIR':
+      workHome = ' someth with chairs'
+      break;
+
+    default: workHome = 'asdd'
+      break;
   }
+  createDiv('thats seems like a ' + results[0].label + ' you can ' +workHome);
+  
 }
